@@ -1,0 +1,60 @@
+train_ae: False
+train_transformer: True
+first_train_transformer: True
+
+epochs: 100
+batch_size: 12
+lr: 0.0005
+num_workers: 12
+num_gpus: 1
+
+val_every_epoch: 2
+save_every_epoch: 5
+log_every_step: 20
+
+use_wandb_tracking: True
+wandb_project_name: mesh_transformer
+wandb_name: test
+
+condition_on_text: False
+use_text_embeds: False
+add_room_codes: False
+
+DATA:
+    train_set_file_path: /studio/datasets/abo/meshgpt_sub/
+    test_set_file_path: /studio/datasets/abo/meshgpt_sub/
+
+    replication: 8
+    is_single: False
+
+MODEL:
+    # for autoencoder
+    # model_name: line_autoencoder
+    use_residual_lfq: True
+
+    codebook_size: 16384
+    dim_codebook: 192
+    attn_encoder_depth: 4
+    attn_decoder_depth: 2
+    local_attn_window_size: 64
+    encoder_dims_through_depth: [
+      64, 128, 256, 256, 576
+    ]
+    decoder_dims_through_depth: [
+      128, 128, 128, 128,
+      192, 192, 192, 192,
+      256, 256, 256, 256, 256, 256,
+      384, 384, 384
+    ]
+
+    ae_ckpt_path: checkpoints/checkpoints_ae/mesh-autoencoder.ckpt.20.pt
+
+    # for transformer
+    dim: 512
+    attn_heads: 16
+    max_seq_len: 2406
+    coarse_pre_gateloop_depth: 3
+    fine_pre_gateloop_depth: 3
+    
+    transformer_checkpoint_folder: checkpoints/checkpoints_transformer
+    transformer_ckpt_path: checkpoints/checkpoints_transformer/mesh-transformer.ckpt.19.pt

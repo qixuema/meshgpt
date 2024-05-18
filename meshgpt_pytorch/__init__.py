@@ -9,6 +9,7 @@ from meshgpt_pytorch.meshgpt_pytorch import (
 # )
 
 from meshgpt_pytorch.trainer_autoencoder import MeshAutoencoderTrainer
+from meshgpt_pytorch.trainer_transformer import MeshTransformerTrainer
 
 from meshgpt_pytorch.data import (
     DatasetFromTransforms,

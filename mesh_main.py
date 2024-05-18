@@ -139,8 +139,8 @@ if train_transformer:
         coarse_pre_gateloop_depth = args.model.coarse_pre_gateloop_depth,
         fine_pre_gateloop_depth = args.model.fine_pre_gateloop_depth,
         condition_on_text = args.condition_on_text,
-        use_text_embeds = args.use_text_embeds,
-        add_room_codes = args.add_room_codes,
+        # use_text_embeds = args.use_text_embeds,
+        # add_room_codes = args.add_room_codes,
     )
     
     epochs = args.epochs
@@ -163,8 +163,8 @@ if train_transformer:
         scheduler_kwargs = dict(
             num_warmup_steps = num_warmup_steps,
             num_training_steps = num_train_steps,),
-        val_every_step = args.val_every_epoch * num_step_per_epoch,
-        checkpoint_every_setp = args.save_every_epoch * num_step_per_epoch,
+        val_every_step = int(args.val_every_epoch * num_step_per_epoch),
+        checkpoint_every_setp = int(args.save_every_epoch * num_step_per_epoch),
         log_every_step = args.log_every_step,
         accelerator_kwargs = dict(
             cpu = False,
