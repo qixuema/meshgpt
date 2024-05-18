@@ -417,7 +417,7 @@ class Dataset(Dataset):
         np.random.shuffle(self.data)
 
 # tensor helper functions
-
+@torch.no_grad()
 def derive_face_edges_from_faces(
     faces: TensorType['b', 'nf', 3, int],
     pad_id = -1,
