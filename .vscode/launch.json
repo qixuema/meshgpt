@@ -1,0 +1,55 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "wf",
+            "type": "python",
+            "request": "launch",
+            "module": "accelerate.commands.launch",
+            // "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "args": [
+                "--config_file",
+                "configs/default_config.yaml",
+                "mesh_main.py",
+                "--config",
+                "configs/train_ae.yaml",
+            ]
+        }
+    ]
+}
+
+
+// {
+//     // Use IntelliSense to learn about possible attributes.
+//     // Hover to view descriptions of existing attributes.
+//     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+//     "version": "0.2.0",
+//     "configurations": [
+//         {
+//             "name": "Python: Current File",
+//             "type": "python",
+//             "request": "launch",
+//             "program": "${file}",
+//             "console": "integratedTerminal",
+//             "justMyCode": false,
+//             "args": [
+//                 "--config",
+//                 "configs/train_transformer_3d_room_code.yaml",
+//                 // "configs/train_meshgpt_ae.yaml",
+//                 // "configs/train_meshgpt_ae.yaml",
+//                 // "configs/train_ae.yaml",
+//                 // "configs/train_transformer_wo_sema.yaml",
+//                 // "configs/train_meshgpt_transformer.yaml",
+//                 // "configs/train_transformer_wo_2_stage.yaml",
+//                 // "configs/train_transformer_wo_lfq.yaml",
+//                 // "configs/train_transformer_wo_attn.yaml",
+//             ]
+//         }
+//     ]
+// }

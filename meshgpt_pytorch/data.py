@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import pickle
 from pathlib import Path
 from functools import partial
 import torch
@@ -21,6 +23,8 @@ from torchtyping import TensorType
 
 from pytorch_custom_utils.utils import pad_or_slice_to
 
+from collections import defaultdict
+
 # helper fn
 
 def exists(v):
@@ -28,6 +32,11 @@ def exists(v):
 
 def identity(t):
     return t
+
+def get_file_list(dir_path):
+    file_path_list = [os.path.join(dir_path, i) for i in os.listdir(dir_path)]
+    file_path_list.sort()
+    return file_path_list
 
 # constants
 
@@ -294,6 +303,104 @@ class DatasetFromTransforms(Dataset):
 
         out = fn(path)
         return self.augment_fn(out)
+
+def scale_and_jitter(vertices, interval=(0.9, 1.1), jitter=0.1):
+    assert isinstance(interval, tuple)
+    
+    scale = torch.rand(1,3) * (interval[1] - interval[0]) + interval[0]
+    vertices = vertices * scale
+    
+    jitter = (torch.rand(1,3) * 2 - 1) * jitter
+    vertices = vertices + jitter
+
+    vertices = torch.clamp(vertices, min=-0.99, max=0.99)
+    
+    return vertices
+
+class Dataset(Dataset):
+    @beartype
+    def __init__(
+        self,
+        dataset_folder = 'data',
+        dataset_file_path = '',
+        is_train = True,
+        transform = scale_and_jitter,
+        condition_on_text = False,
+        add_room_codes = False,
+        with_room_codes = False,
+        replica=10,
+        is_single=True,
+    ):
+
+        self.dataset_folder = dataset_folder
+        self.data_path = dataset_file_path
+        self.is_train = is_train
+        self.transform = transform
+        self.condition_on_text = condition_on_text
+        self.add_room_codes = add_room_codes
+        self.with_room_codes = with_room_codes
+        
+        self.replica = replica
+
+        self.is_single = is_single
+        if self.is_single:
+            self.data = self._load_data()
+        else:
+            self.data = get_file_list(self.data_path)
+
+    def _load_data(self):
+        data = []
+            
+        with open(self.data_path, 'rb') as f:
+            data = pickle.load(f)
+        
+        # if self.is_train == True:
+        # data = data[:960]
+        
+        print(f'load {len(data)} data')
+        
+        return data
+    
+    def __len__(self):
+        if self.is_train != True:
+            return len(self.data)
+        else:
+            return len(self.data) * self.replica
+        
+    def __getitem__(self, idx):
+        idx = idx % len(self.data)
+        if self.is_single:
+            sample = self.data[idx]
+        else:
+            sample_file_path = self.data[idx]
+            sample = np.load(sample_file_path)
+        
+        vertices = sample['vertices']
+        
+        faces = sample['faces'].astype(np.int32)
+        
+        vertices = torch.from_numpy(vertices).float()
+        faces = torch.from_numpy(faces).long()
+
+        # transform
+        
+        if self.transform:
+            vertices = self.transform(vertices) 
+
+        data = defaultdict(list)
+
+        data['vertices'] = vertices
+        data['faces'] = faces
+
+        return data
+    
+    def shuffle(self):
+        # num_sample = len(self.data)
+        # # 生成打乱的索引
+        # shuffled_indices = np.random.permutation(num_sample).tolist()
+        # # 使用这些索引来重新排序数组
+        # self.data = self.data[shuffled_indices]
+        np.random.shuffle(self.data)
 
 # tensor helper functions
 

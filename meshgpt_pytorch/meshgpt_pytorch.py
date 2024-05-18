@@ -545,7 +545,7 @@ class MeshAutoencoder(Module):
                 num_quantizers = num_quantizers,
                 codebook_size = codebook_size,
                 commitment_loss_weight = 1.,
-                **rlfq_kwargs,
+                # **rlfq_kwargs,
                 **rq_kwargs
             )
         else:

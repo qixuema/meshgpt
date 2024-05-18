@@ -8,7 +8,7 @@ from torch import nn, Tensor
 from torch.nn import Module
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
-from torch.optim.lr_scheduler import _LRScheduler
+from torch.optim.lr_scheduler import _LRScheduler, LRScheduler
 
 from pytorch_custom_utils import (
     get_adam_optimizer,
@@ -21,7 +21,7 @@ from accelerate.utils import DistributedDataParallelKwargs
 
 from beartype import beartype
 from beartype.door import is_bearable
-from beartype.typing import Tuple, Type, List
+from beartype.typing import Tuple, Type, List, Optional
 
 from ema_pytorch import EMA
 
@@ -33,6 +33,10 @@ from meshgpt_pytorch.meshgpt_pytorch import (
     MeshAutoencoder,
     MeshTransformer
 )
+
+from meshgpt_pytorch.optimizer_scheduler import OptimizerWithScheduler
+
+from meshgpt_pytorch.misc import get_lr
 
 # constants
 
@@ -76,21 +80,25 @@ class MeshAutoencoderTrainer(Module):
         batch_size: int,
         grad_accum_every: int,
         val_dataset: Dataset | None = None,
-        val_every: int = 100,
+        val_every_step: int = 100,
         val_num_batches: int = 5,
         learning_rate: float = 1e-4,
         weight_decay: float = 0.,
         max_grad_norm: float | None = None,
         ema_kwargs: dict = dict(),
-        scheduler: Type[_LRScheduler] | None = None,
+        # scheduler: Type[_LRScheduler] | None = None,
+        scheduler: Optional[Type[LRScheduler]] = None,
+
         scheduler_kwargs: dict = dict(),
         accelerator_kwargs: dict = dict(),
         optimizer_kwargs: dict = dict(),
-        checkpoint_every = 1000,
+        checkpoint_every_step = 1000,
         checkpoint_folder = './checkpoints',
         data_kwargs: Tuple[str, ...] = ['vertices', 'faces', 'face_edges'],
         warmup_steps = 1000,
-        use_wandb_tracking = False
+        use_wandb_tracking = False,
+        num_workers = 0,
+        log_every_step = 10,
     ):
         super().__init__()
 
@@ -113,35 +121,47 @@ class MeshAutoencoderTrainer(Module):
         if self.is_main:
             self.ema_model = EMA(model, **ema_kwargs)
 
-        self.optimizer = OptimizerWithWarmupSchedule(
+        # self.optimizer = OptimizerWithWarmupSchedule(
+        #     accelerator = self.accelerator,
+        #     optimizer = get_adam_optimizer(model.parameters(), lr = learning_rate, wd = weight_decay, **optimizer_kwargs),
+        #     scheduler = scheduler,
+        #     scheduler_kwargs = scheduler_kwargs,
+        #     warmup_steps = warmup_steps,
+        #     max_grad_norm = max_grad_norm
+        # )
+
+        self.optimizer = OptimizerWithScheduler( # 初始化 base warmup 的时候，要注释掉 self.dampen
             accelerator = self.accelerator,
             optimizer = get_adam_optimizer(model.parameters(), lr = learning_rate, wd = weight_decay, **optimizer_kwargs),
             scheduler = scheduler,
             scheduler_kwargs = scheduler_kwargs,
-            warmup_steps = warmup_steps,
+            # warmup_steps = warmup_steps,
             max_grad_norm = max_grad_norm
         )
+
 
         self.dataloader = DataLoader(
             dataset,
             batch_size = batch_size,
             shuffle = True,
+            num_workers = num_workers,
             drop_last = True,
             collate_fn = partial(custom_collate, pad_id = model.pad_id)
         )
 
         self.should_validate = exists(val_dataset)
 
-        if self.should_validate:
+        if self.should_validate and self.is_main:
             assert len(val_dataset) > 0, 'your validation dataset is empty'
 
-            self.val_every = val_every
+            self.val_every_step = val_every_step
             self.val_num_batches = val_num_batches
 
             self.val_dataloader = DataLoader(
                 val_dataset,
                 batch_size = batch_size,
                 shuffle = True,
+                num_workers = num_workers,
                 drop_last = True,
                 collate_fn = partial(custom_collate, pad_id = model.pad_id)
             )
@@ -164,9 +184,11 @@ class MeshAutoencoderTrainer(Module):
         self.num_train_steps = num_train_steps
         self.register_buffer('step', torch.tensor(0))
 
-        self.checkpoint_every = checkpoint_every
+        self.checkpoint_every_step = checkpoint_every_step
         self.checkpoint_folder = Path(checkpoint_folder)
         self.checkpoint_folder.mkdir(exist_ok = True, parents = True)
+
+        self.log_every_step = log_every_step
 
     @property
     def ema_tokenizer(self):
@@ -268,11 +290,22 @@ class MeshAutoencoderTrainer(Module):
 
             self.print(f'recon loss: {recon_loss.item():.3f} | commit loss: {commit_loss.sum().item():.3f}')
 
-            self.log(
-                total_loss = total_loss.item(),
-                commit_loss = commit_loss.sum().item(),
-                recon_loss = recon_loss.item()
-            )
+            # self.log(
+            #     total_loss = total_loss.item(),
+            #     commit_loss = commit_loss.sum().item(),
+            #     recon_loss = recon_loss.item()
+            # )
+            if divisible_by(step, self.log_every_step):
+                cur_lr = get_lr(self.optimizer.optimizer)
+                
+                # print(f'lr: {cur_lr:.6f} | recon loss: {recon_loss.item():.3f} | commit loss: {commit_loss.sum().item():.3f}')
+                
+                self.log(
+                    total_loss = total_loss.item(),
+                    commit_loss = commit_loss.sum().item(),
+                    recon_loss = recon_loss.item(),
+                    cur_lr = cur_lr
+                )            
 
             self.optimizer.step()
             self.optimizer.zero_grad()
@@ -287,7 +320,7 @@ class MeshAutoencoderTrainer(Module):
 
             self.wait()
 
-            if self.is_main and self.should_validate and divisible_by(step, self.val_every):
+            if self.is_main and self.should_validate and divisible_by(step, self.val_every_step):
 
                 total_val_recon_loss = 0.
                 self.ema_model.eval()
@@ -312,8 +345,8 @@ class MeshAutoencoderTrainer(Module):
 
             self.wait()
 
-            if self.is_main and divisible_by(step, self.checkpoint_every):
-                checkpoint_num = step // self.checkpoint_every
+            if self.is_main and divisible_by(step, self.checkpoint_every_step):
+                checkpoint_num = step // self.checkpoint_every_step
                 self.save(self.checkpoint_folder / f'mesh-autoencoder.ckpt.{checkpoint_num}.pt')
 
             self.wait()
