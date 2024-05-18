@@ -164,3 +164,4 @@ data/
 data_test/
 wandb/
 checkpoints/
+recon_mesh/

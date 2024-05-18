@@ -85,6 +85,15 @@ def line_coords_to_file(line_coords):
         lines = lines
     )
     
+def face_coords_to_file(line_coords):
+    vertices = rearrange(line_coords, 'nl nlv c -> (nl nlv) c')
+    faces = [[i, i + 1, i + 2] for i in range(0, vertices.size(0), 3)]
+
+    return dict(
+        vertices = vertices,
+        faces = faces
+    )
+    
 def mask_variable_data(data):
     """对 data 进行 padding"""
     length = data.size(0)

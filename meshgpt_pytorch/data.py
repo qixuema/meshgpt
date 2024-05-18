@@ -320,10 +320,12 @@ def scale_and_jitter(vertices, interval=(0.9, 1.1), jitter=0.1):
     
     return vertices
 
+# @cache_face_edges_for_dataset(max_edges_len=2048)
 class Dataset(Dataset):
     @beartype
     def __init__(
         self,
+        # transforms: Dict[str, Callable[[Path], Tuple[Vertices, Faces]]],
         dataset_folder = 'data',
         dataset_file_path = '',
         is_train = True,
@@ -333,6 +335,8 @@ class Dataset(Dataset):
         with_room_codes = False,
         replica=10,
         is_single=True,
+        # data_kwargs = ["vertices", "faces", "face_edges"],
+
     ):
 
         self.dataset_folder = dataset_folder
@@ -356,7 +360,11 @@ class Dataset(Dataset):
             self.data = self.data[:int(len(self.data)*0.9)]
         else:
             self.data = self.data[int(len(self.data)*0.9):]
-
+        
+        print(f'load {len(self.data)} data')
+        
+        # self.face_edges_all = {}
+        
     def _load_data(self):
         data = []
             
@@ -366,7 +374,7 @@ class Dataset(Dataset):
         # if self.is_train == True:
         # data = data[:960]
         
-        print(f'load {len(data)} data')
+        # print(f'load {len(data)} data')
         
         return data
     
@@ -396,6 +404,15 @@ class Dataset(Dataset):
         vertices = torch.from_numpy(vertices).float()
         faces = torch.from_numpy(faces).long()
 
+        # if str(idx) not in self.face_edges_all:
+        #     self.face_edges_all[str(idx)] = face_edges
+        # else:
+        
+        # face_edges = self.face_edges_all[idx]
+
+        # face_edges = derive_face_edges_from_faces(faces)
+
+
         # transform
         
         if self.transform:
@@ -405,6 +422,7 @@ class Dataset(Dataset):
 
         data['vertices'] = vertices
         data['faces'] = faces
+        # data['face_edges'] = face_edges
 
         return data
     
@@ -460,6 +478,8 @@ def derive_face_edges_from_faces(
 
     if is_one_face:
         face_edges = rearrange(face_edges, '1 e ij -> e ij')
+
+    # print(face_edges.shape)
 
     return face_edges
 
