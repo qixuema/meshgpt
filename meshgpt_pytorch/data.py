@@ -25,6 +25,8 @@ from pytorch_custom_utils.utils import pad_or_slice_to
 
 from collections import defaultdict
 
+from meshgpt_pytorch.misc import find_files_with_extension
+
 # helper fn
 
 def exists(v):
@@ -37,6 +39,7 @@ def get_file_list(dir_path):
     file_path_list = [os.path.join(dir_path, i) for i in os.listdir(dir_path)]
     file_path_list.sort()
     return file_path_list
+
 
 # constants
 
@@ -346,7 +349,13 @@ class Dataset(Dataset):
         if self.is_single:
             self.data = self._load_data()
         else:
-            self.data = get_file_list(self.data_path)
+            # self.data = get_file_list(self.data_path)
+            self.data = find_files_with_extension(self.data_path, 'npz')
+            
+        if self.is_train:
+            self.data = self.data[:int(len(self.data)*0.9)]
+        else:
+            self.data = self.data[int(len(self.data)*0.9):]
 
     def _load_data(self):
         data = []
@@ -372,8 +381,13 @@ class Dataset(Dataset):
         if self.is_single:
             sample = self.data[idx]
         else:
+            # tensor_path = self.data[idx]
             sample_file_path = self.data[idx]
             sample = np.load(sample_file_path)
+        
+            # loaded = np.load(tensor_path, allow_pickle=True)['arr_0'].item()
+            # vert, face = loaded["vert"], 
+            # sample = {'vertices': loaded["vert"], 'faces':loaded["face"]}
         
         vertices = sample['vertices']
         

@@ -296,7 +296,7 @@ class MeshAutoencoderTrainer(Module):
             if divisible_by(step, self.log_every_step):
                 cur_lr = get_lr(self.optimizer.optimizer)
                 
-                print(f'lr: {cur_lr:.6f} | recon loss: {recon_loss.item():.3f} | commit loss: {commit_loss.sum().item():.3f}')
+                # print(f'lr: {cur_lr:.6f} | recon loss: {recon_loss.item():.3f} | commit loss: {commit_loss.sum().item():.3f}')
                 
                 self.log(
                     total_loss = total_loss.item(),
