@@ -1,17 +1,17 @@
 train_ae: True
 first_train_ae: True
 
-epochs: 10
+epochs: 100
 batch_size: 16
 lr: 0.0005
 num_workers: 8
-num_gpus: 1
+num_gpus: 8
 # num_gpus: 1
-val_every_epoch: 1
-save_every_epoch: 1
+val_every_epoch: 2
+save_every_epoch: 5
 
 use_wandb_tracking: True
-wandb_project_name: line_ae
+wandb_project_name: mesh_ae
 wandb_name: test
 
 condition_on_text: False
@@ -22,11 +22,12 @@ DATA:
     is_single: False
     # train_set_file_path: /studio/datasets/abc/abc_3d_train.pkl
     # test_set_file_path: /studio/datasets/abc/abc_3d_test.pkl
-    train_set_file_path: /studio/projects/meshgpt/meshgpt-pytorch/data
-    test_set_file_path: /studio/projects/meshgpt/meshgpt-pytorch/data_test
+    # train_set_file_path: /studio/projects/meshgpt/meshgpt-pytorch/data
+    # test_set_file_path: /studio/projects/meshgpt/meshgpt-pytorch/data_test
+    train_set_file_path: /studio/datasets/abo/meshgpt_400_aug/
+    test_set_file_path: /studio/datasets/abo/meshgpt_400_aug/
 
-
-    replication: 10
+    replication: 2
 
 MODEL:
     # model_name: line_autoencoder

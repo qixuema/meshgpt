@@ -1,12 +1,12 @@
 train_ae: False
 train_transformer: True
-first_train_transformer: True
+first_train_transformer: False
 
-epochs: 100
+epochs: 200
 batch_size: 12
 lr: 0.0005
 num_workers: 12
-num_gpus: 1
+num_gpus: 8
 
 val_every_epoch: 2
 save_every_epoch: 5
@@ -21,8 +21,8 @@ use_text_embeds: False
 add_room_codes: False
 
 DATA:
-    train_set_file_path: /studio/datasets/abo/meshgpt_sub/
-    test_set_file_path: /studio/datasets/abo/meshgpt_sub/
+    train_set_file_path: /studio/datasets/abo/meshgpt_sub_id_2k/
+    test_set_file_path: /studio/datasets/abo/meshgpt_sub_id_2k/
 
     replication: 8
     is_single: False
@@ -57,4 +57,4 @@ MODEL:
     fine_pre_gateloop_depth: 3
     
     transformer_checkpoint_folder: checkpoints/checkpoints_transformer
-    transformer_ckpt_path: checkpoints/checkpoints_transformer/mesh-transformer.ckpt.19.pt
+    transformer_ckpt_path: checkpoints/checkpoints_transformer/mesh-transformer.ckpt.10.pt

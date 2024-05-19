@@ -294,7 +294,7 @@ class MeshTransformerTrainer(Module):
             if divisible_by(step, self.log_every_step):
                 cur_lr = get_lr(self.optimizer.optimizer)
 
-                self.print(f'step: {step}, lr: {cur_lr:.7f}, loss: {loss.item():.3f}')
+                # self.print(f'step: {step}, lr: {cur_lr:.7f}, loss: {loss.item():.3f}')
 
                 if is_multi_loss:
                     self.log(
